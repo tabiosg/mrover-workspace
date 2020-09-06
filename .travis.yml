@@ -10,6 +10,7 @@ before_install:
 - sudo apt-get update
 - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
 - sudo apt-get install -y nvidia-docker2
+- sudo apt-get install -y cuda-drivers
 - sudo systemctl restart docker
 - docker build -t mrover .
 script:
