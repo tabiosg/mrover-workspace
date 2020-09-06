@@ -1,5 +1,5 @@
 FROM nvidia/cuda:10.0-devel-ubuntu18.04
-CMD nvidia-smi
+RUN nvidia-smi -a
 
 MAINTAINER Justin Beemer <jubeemer@umich.edu>
 

@@ -11,7 +11,6 @@ before_install:
 - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
 - sudo apt-get install -y nvidia-docker2
 - sudo systemctl restart docker
-- nvidia-smi
 - docker build -t mrover .
 script:
 - docker run -e NVIDIA_DRIVER_CAPABILITES=all --gpus all --rm -it -v $(pwd):/root -v /dev/tty:/dev/ttyUSB0 -v /dev/null:/run/udev:ro -v /dev/tty:/dev/i2c-0 -v /dev/tty:/dev/i2c-1 -v /dev/tty:/dev/i2c-2
