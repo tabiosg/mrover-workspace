@@ -17,9 +17,8 @@ void Controller::make_live()
     try
     {
         uint8_t buffer[32];
-        memcpy(buffer, UINT8_POINTER_T(&(hardware.pwm_min)), 2);
-        memcpy(buffer + 2, UINT8_POINTER_T(&(hardware.pwm_max)), 2);
-        memcpy(buffer + 4, UINT8_POINTER_T(&(hardware.pwm_period)), 2);
+        //buffer sends max percentage speed  
+        memcpy(buffer, UINT8_POINTER_T(&(hardware.speed_max)), 2);
         transact(CONFIG_PWM, buffer, nullptr);
 
         memcpy(buffer, UINT8_POINTER_T(&(kP)), 4);
@@ -28,10 +27,10 @@ void Controller::make_live()
         transact(CONFIG_K, buffer, nullptr);
 
         uint16_t input = 0;
-        //Uncomment this when we get to 2021 IK testing
-        //transact(SPI, nullptr, UINT8_POINTER_T(&input));
 
-        int32_t angle = static_cast<int32_t>(quad_cpr * ((static_cast<float>(input) / spi_cpr) + (start_angle / (2.0 * M_PI))));
+        transact(ABS_ENC, nullptr, UINT8_POINTER_T(&input));
+
+        int32_t angle = static_cast<int32_t>(quad_cpr * ((static_cast<float>(input) / i2c_cpr) + (start_angle / (2.0 * M_PI))));
         transact(ADJUST, UINT8_POINTER_T(&angle), nullptr);
 
         transact(ON, nullptr, nullptr);
@@ -49,10 +48,10 @@ void Controller::make_live()
 void Controller::record_angle(int32_t angle)
 {
     float other_angle = (static_cast<float>(angle) / quad_cpr) * 2.0 * M_PI;
-    if (std::abs(other_angle - current_angle) < M_PI / 16.0)
-    {
+    //if (std::abs(other_angle - current_angle) < M_PI / 16.0)
+    //{
         current_angle = other_angle;
-    }
+    //}
 }
 
 //Initialize the Controller. Need to know which nucleo and which channel on the nucleo to use
@@ -65,9 +64,14 @@ void Controller::open_loop(float input)
     {
         make_live();
 
-        uint16_t throttle = hardware.throttle(input);
+        // sent as a number between -1.0 and 1.0
+	uint8_t buffer[32];
+        float throttle = hardware.throttle(input);
+        // print("throttle: ", throttle);
+	    memcpy(buffer, UINT8_POINTER_T(&throttle), 4);
+
         int32_t angle;
-        transact(OPEN_PLUS, UINT8_POINTER_T(&throttle), UINT8_POINTER_T(&angle));
+        transact(OPEN_PLUS, buffer, UINT8_POINTER_T(&angle));
 
         record_angle(angle);
     }
@@ -152,7 +156,14 @@ void Controller::angle()
     try
     {
         int32_t angle;
-        transact(QUAD, nullptr, UINT8_POINTER_T(&angle));
+        if (name == "RA_1") {
+            int16_t temp;
+            transact(ABS_ENC, nullptr, UINT8_POINTER_T(&temp));
+            angle = static_cast<int32_t>(temp);
+        }
+        else {
+            transact(QUAD, nullptr, UINT8_POINTER_T(&angle));
+        }
         record_angle(angle);
     }
     catch (IOFailure &e)
